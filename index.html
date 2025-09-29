@@ -142,22 +142,61 @@
 
     <script>
         // --- BASE DE DATOS DE EJEMPLO (se reemplazará después) ---
-        const db = {
-            "classes": [
-                {id: 1, name: "bôldpilates", instructor: "Sofía", date: "2025-08-18", time: "09:00", capacity: 6, booked: 2},
-                {id: 2, name: "bôdysculpt", instructor: "Lucía", date: "2025-08-18", time: "18:30", capacity: 6, booked: 5},
-                {id: 3, name: "barrebôost", instructor: "Elena", date: "2025-08-19", time: "09:00", capacity: 6, booked: 6},
-            ],
-            "events": [
-                {id: 1, name: "Matcha & Meditación", description: "Una mañana para conectar contigo misma, disfrutar de un matcha ceremonial y una meditación guiada.", date: "2025-08-23", price: 25.0, image_url: "https://images.unsplash.com/photo-1593981597592-517871a2542a?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"},
-                {id: 2, name: "Velas & Barre Night", description: "Crea tu propia vela aromática y termina la noche con una clase de barre a la luz de las velas.", date: "2025-08-30", price: 45.0, image_url: "https://images.unsplash.com/photo-1597373812421-319a2e6ac888?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"},
-            ],
-            "products": [
-                {id: 1, name: "Vela 'Calma'", price: 20.0, stock_status: "En stock", image_url: "https://images.unsplash.com/photo-1614036125195-0b73a0e633af?q=80&w=2826&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"},
-                {id: 2, name: "Tote Bag 'Casa Bo'", price: 15.0, stock_status: "Pocas unidades", image_url: "https://images.unsplash.com/photo-1588863935937-a55853551574?q=80&w=2814&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"},
-                {id: 3, name: "Calcetines Antideslizantes", price: 9.0, stock_status: "En stock", image_url: "https://images.unsplash.com/photo-1620581924033-5c74a3f898a8?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"},
-            ]
-        };
+        // --- Conexión con el Backend (Render) ---
+const BACKEND_URL = 'httpscasa-bo-backend.onrender.com'; // <-- PEGA AQUÍ TU URL DE RENDER
+
+// --- Core Functions (Modificadas para usar el backend) ---
+async function loadView(viewName) {
+    currentView = viewName;
+    const mainContent = document.getElementById('main-content');
+    mainContent.innerHTML = '<p class="text-center">Cargando...</p>'; // Muestra un mensaje de carga
+    updateActiveNav(viewName);
+
+    try {
+        let html = '';
+        if (viewName === 'clases') {
+            const response = await fetch(`${BACKEND_URL}/clases`);
+            const clases = await response.json();
+            html = renderClasesView(clases); // Le pasamos los datos reales
+        } 
+        // ... (El resto de las vistas como tienda, eventos, etc. seguirían usando datos de ejemplo por ahora)
+        // ... Para un proyecto completo, crearías endpoints en el backend para ellos también.
+        else if (viewName === 'eventos') { html = renderEventosView(); } 
+        else if (viewName === 'tienda') { html = renderTiendaView(); } 
+        else if (viewName === 'perfil') { html = renderPerfilView(); } 
+        else if (viewName === 'cart') { html = renderCartView(); }
+
+        mainContent.innerHTML = html;
+    } catch (error) {
+        console.error('Error loading view:', error);
+        mainContent.innerHTML = '<p class="text-center text-red-500">No se pudo cargar el contenido. Inténtalo de nuevo.</p>';
+    } finally {
+        feather.replace();
+    }
+}
+
+// Función para renderizar clases con datos del backend
+function renderClasesView(clases) {
+    let clasesHtml = `<h2 class="font-montserrat font-normal text-xl text-center mb-6 text-main">Próximas Clases</h2>`;
+    clasesHtml += clases.map(c => `
+        <div id="class-${c.id}" class="bg-beige-card rounded-xl p-5 mb-4">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <h3 class="font-fanwood text-3xl text-main -ml-1">${formatClassName(c.name)}</h3>
+                    <p class="text-md text-gray-500">${c.instructor}</p>
+                </div>
+                ${getAvailabilityBadge(c.booked, c.capacity)}
+            </div>
+            <div class="flex items-center text-sm text-gray-600 mb-4">
+                <i data-feather="calendar" class="w-4 h-4 mr-2"></i> ${formatDate(c.date)}
+                <span class="mx-2 text-gray-300">|</span>
+                <i data-feather="clock" class="w-4 h-4 mr-2"></i> ${c.time}
+            </div>
+            ${getBookingButton(c.id, c.booked, c.capacity)}
+        </div>
+    `).join('');
+    return clasesHtml;
+}
         // --- El resto del script...
         let currentView = 'clases';
         let userBookings = new Set();
